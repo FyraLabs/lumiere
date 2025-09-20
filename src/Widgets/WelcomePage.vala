@@ -44,14 +44,11 @@ public class Lumiere.WelcomePage : Gtk.Box {
         open_button.is_pill = true;
         replay_button = new He.Button ("", _("Replay last video"));
         replay_button.is_pill = true;
-        var library_button = new He.Button ("", _("Browse Library"));
-        library_button.is_pill = true;
 
         placeholder.append (title_label);
         placeholder.append (description_label);
         placeholder.append (open_button);
         placeholder.append (replay_button);
-        placeholder.append (library_button);
 
         var box = new Gtk.Box (VERTICAL, 0);
         header_bar = new HeaderBar ();
@@ -65,8 +62,6 @@ public class Lumiere.WelcomePage : Gtk.Box {
         replay_button_image = new Gtk.Image.from_icon_name ("media-playlist-repeat");
         replay_button_description = new Gtk.Label ("");
 
-        var library_manager = Lumiere.Services.LibraryManager.get_instance ();
-        library_button.visible = library_manager.library_items.get_n_items () > 0;
 
         update_replay_button ();
         update_replay_title ();
@@ -82,18 +77,11 @@ public class Lumiere.WelcomePage : Gtk.Box {
             window.resume_last_videos ();
         });
 
-        library_button.clicked.connect (() => {
-            var window = (Lumiere.Window)get_root ();
-            window.show_library ();
-        });
 
         settings.changed["current-video"].connect (update_replay_button);
 
         settings.changed["last-stopped"].connect (update_replay_title);
 
-        library_manager.library_items.items_changed.connect (() => {
-            library_button.visible = library_manager.library_items.get_n_items () > 0;
-        });
     }
 
     private void update_replay_button () {

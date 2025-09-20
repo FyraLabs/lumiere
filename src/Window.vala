@@ -19,12 +19,10 @@
 public class Lumiere.Window : He.ApplicationWindow {
     public Gtk.Stack navigation_stack;
     private Gtk.Revealer app_notification;
-    private EpisodesPage episodes_page;
-    private LibraryPage library_page;
     private PlayerPage player_page;
     private WelcomePage welcome_page;
 
-    public enum NavigationPage { WELCOME, LIBRARY, EPISODES }
+    public enum NavigationPage { WELCOME }
 
     public signal void media_volumes_changed ();
 
@@ -73,24 +71,17 @@ public class Lumiere.Window : He.ApplicationWindow {
 
         set_default_size (1000, 680);
 
-        library_page = LibraryPage.get_instance ();
-
         welcome_page = new WelcomePage ();
 
         player_page = new PlayerPage ();
 
-        episodes_page = new EpisodesPage ();
 
         navigation_stack = new Gtk.Stack ();
         navigation_stack.add_named (welcome_page, "welcome");
-        navigation_stack.add_named (library_page, "library");
-        navigation_stack.add_named (episodes_page, "episodes");
         navigation_stack.add_named (player_page, "player");
 
         // Set the navigation stack for all pages
         welcome_page.set_navigation_stack (navigation_stack);
-        library_page.set_navigation_stack (navigation_stack);
-        episodes_page.set_navigation_stack (navigation_stack);
         player_page.set_navigation_stack (navigation_stack);
 
         app_notification = new Gtk.Revealer () {
@@ -111,26 +102,6 @@ public class Lumiere.Window : He.ApplicationWindow {
         child = overlay;
         present ();
 
-        var manager = Lumiere.Services.LibraryManager.get_instance ();
-
-        manager.media_item_trashed.connect ((item) => {
-            var notification_label = (Gtk.Label) app_notification.child;
-            notification_label.label = _("Video '%s' Removed.").printf (item.title);
-            app_notification.reveal_child = true;
-
-            // Auto-hide after 3 seconds
-            Timeout.add_seconds (3, () => {
-                app_notification.reveal_child = false;
-                return false;
-            });
-        });
-
-        library_page.show_episodes.connect ((item, setup_only) => {
-            episodes_page.set_show (item);
-            if (!setup_only) {
-                navigation_stack.visible_child_name = "episodes";
-            }
-        });
 
         navigation_stack.notify["visible-child-name"].connect (() => {
             update_navigation ();
@@ -184,11 +155,7 @@ public class Lumiere.Window : He.ApplicationWindow {
     }
 
     private void action_back () {
-        if (navigation_stack.visible_child_name == "episodes") {
-            navigation_stack.visible_child_name = "library";
-        } else if (navigation_stack.visible_child_name == "library") {
-            navigation_stack.visible_child_name = "welcome";
-        } else if (navigation_stack.visible_child_name == "player") {
+        if (navigation_stack.visible_child_name == "player") {
             navigation_stack.visible_child_name = "welcome";
         }
     }
@@ -210,22 +177,11 @@ public class Lumiere.Window : He.ApplicationWindow {
     }
 
     private void action_search () {
-        if (navigation_stack.visible_child_name == "library") {
-            library_page.search ();
-        } else if (navigation_stack.visible_child_name == "episodes") {
-            episodes_page.search ();
-        } else {
-            Gdk.Display.get_default ().beep ();
-        }
+        Gdk.Display.get_default ().beep ();
     }
 
     private void action_undo () {
-        /* we don't have access to trash when inside an flatpak sandbox
-         * so we don't allow the user to restore in this case.
-         */
-        if (!is_sandboxed ()) {
-            Lumiere.Services.LibraryManager.get_instance ().undo_delete_item ();
-        }
+        // Undo functionality removed with Library
     }
 
     /** Returns true if the code parameter matches the keycode of the keyval parameter for
@@ -287,11 +243,8 @@ public class Lumiere.Window : He.ApplicationWindow {
                     break;
             }
         } else if (navigation_stack.visible_child_name == "welcome") {
-            bool ctrl_pressed = CONTROL_MASK in state;
             if (match_keycode (Gdk.Key.p, keycode) || match_keycode (Gdk.Key.space, keycode)) {
                 resume_last_videos ();
-            } else if (ctrl_pressed && match_keycode (Gdk.Key.b, keycode)) {
-                show_library ();
             }
         }
     }
@@ -317,8 +270,7 @@ public class Lumiere.Window : He.ApplicationWindow {
 
         if (force_play && videos.length > 0) {
             string videofile = videos [0];
-            NavigationPage page = library_page.prepare_to_play (videofile);
-            play_file (videofile, page);
+            play_file (videofile, NavigationPage.WELCOME);
         }
     }
 
@@ -330,9 +282,6 @@ public class Lumiere.Window : He.ApplicationWindow {
         }
     }
 
-    public void show_library () {
-        navigation_stack.visible_child_name = "library";
-    }
 
     public void run_open_file (bool clear_playlist = false, bool force_play = true) {
         var all_files_filter = new Gtk.FileFilter ();
@@ -418,12 +367,6 @@ public class Lumiere.Window : He.ApplicationWindow {
         switch (current_page) {
             case "welcome":
                 welcome_page.header_bar.update_navigation (current_page);
-                break;
-            case "library":
-                library_page.header_bar.update_navigation (current_page);
-                break;
-            case "episodes":
-                episodes_page.header_bar.update_navigation (current_page);
                 break;
             case "player":
                 player_page.header_bar.update_navigation (current_page);

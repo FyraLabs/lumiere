@@ -62,12 +62,6 @@ public class Lumiere.HeaderBar : Gtk.Box {
             case "welcome":
                 header_bar.show_back = false;
                 break;
-            case "library":
-                header_bar.show_back = true;
-                break;
-            case "episodes":
-                header_bar.show_back = true;
-                break;
             case "player":
                 header_bar.show_back = true;
                 break;
