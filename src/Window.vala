@@ -284,24 +284,19 @@ public class Lumiere.Window : He.ApplicationWindow {
 
 
     public void run_open_file (bool clear_playlist = false, bool force_play = true) {
-        var all_files_filter = new Gtk.FileFilter ();
-        all_files_filter.set_filter_name (_("All files"));
-        all_files_filter.add_pattern ("*");
-
-        var video_filter = new Gtk.FileFilter ();
-        video_filter.set_filter_name (_("Video files"));
-        video_filter.add_mime_type ("video/*");
-
-        var filters = new ListStore (typeof (Gtk.FileFilter));
-        filters.append (video_filter);
-        filters.append (all_files_filter);
-
         var file_dialog = new Gtk.FileDialog () {
             title = _("Open"),
-            accept_label = _("_Open"),
-            filters = filters,
-            initial_folder = File.new_for_path (settings.get_string ("last-folder"))
+            accept_label = _("_Open")
         };
+        
+        // Set initial folder if it exists and is valid
+        var last_folder_path = settings.get_string ("last-folder");
+        if (last_folder_path != "" && last_folder_path != "-1") {
+            var last_folder = File.new_for_path (last_folder_path);
+            if (last_folder.query_exists ()) {
+                file_dialog.initial_folder = last_folder;
+            }
+        }
 
         file_dialog.open_multiple.begin (this, null, (obj, res) => {
             try {
@@ -333,7 +328,9 @@ public class Lumiere.Window : He.ApplicationWindow {
                 var last_folder = files[0].get_parent ();
                 settings.set_string ("last-folder", last_folder.get_path ());
             } catch (Error e) {
-                warning ("Failed to open video files: %s", e.message);
+                if (e.message != "Dismissed by user") {
+                    warning ("Failed to open video files: %s", e.message);
+                }
             }
         });
     }

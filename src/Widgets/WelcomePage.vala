@@ -67,12 +67,12 @@ public class Lumiere.WelcomePage : Gtk.Box {
         update_replay_title ();
 
         open_button.clicked.connect (() => {
-            var window = (Lumiere.Window)get_root ();
+            var window = (Lumiere.Window) ((Gtk.Application) Application.get_default ()).active_window;
             window.run_open_file ();
         });
 
         replay_button.clicked.connect (() => {
-            var window = (Lumiere.Window)get_root ();
+            var window = (Lumiere.Window) ((Gtk.Application) Application.get_default ()).active_window;
             Lumiere.PlaybackManager.get_default ().append_to_playlist ({ current_video });
             window.resume_last_videos ();
         });
